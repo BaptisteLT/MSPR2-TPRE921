@@ -61,8 +61,8 @@ Le cluster a besoin du moteur Docker pour faire tourner ses conteneurs de maniè
     Bash > sudo apt-get install -y docker.io
 
 #### Ajouter votre utilisateur au groupe Docker (pour éviter de taper sudo partout)
-    Bash > sudo usermod -aG docker $USER
     Bash > newgrp docker
+    Bash > sudo usermod -aG docker $USER
 
 ### 2. Installation de Minikube
 
