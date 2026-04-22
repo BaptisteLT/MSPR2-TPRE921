@@ -159,3 +159,11 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
 ##### Sur Linux :
     Bash> echo $(kubectl -n openfaas get secret basic-auth -o jsonpath="{.data.basic-auth-password}" | base64 --decode)
+
+## Installation de FaaS cli
+
+### Sur Windows
+    Télécharger le .exe sur https://github.com/openfaas/faas-cli/releases puis rajouter dans les variables d'environnement
+
+### Sur Linux
+    curl -sSL https://cli.openfaas.com | sudo sh
