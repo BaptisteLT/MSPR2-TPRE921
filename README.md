@@ -127,6 +127,28 @@ helm install mspr-mariadb bitnami/mariadb \
   --set auth.database=cofrap_db \
   --set auth.username=cofrap_user \
   --set auth.password="SuperProtect&dPassw0ord"
+  
+#### On check que ça tourne
+    kubectl get pods
+
+#### On récupère le nom du service (ici mspr-mariadb)
+    PS C:\Projets\MSPR2> kubectl get svc
+    NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+    kubernetes              ClusterIP   10.96.0.1      <none>        443/TCP    43h
+    mspr-mariadb            ClusterIP   10.96.237.39   <none>        3306/TCP   42h
+    mspr-mariadb-headless   ClusterIP   None           <none>        3306/TCP   42h
+
+#### Et donc dans le slack.yaml on aura
+    functions:
+        hello-python:
+            lang: python3-http-debian
+            handler: ./hello-python
+            image: pabloescargot/hellopython:latest
+            environment:
+            DB_HOST: "mspr-mariadb.default.svc.cluster.local"
+            DB_USER: "cofrap_user"
+            DB_PASSWORD: "SuperProtect&dPassw0ord"
+            DB_NAME: "cofrap_db"
 
 ### 2. Déploiement d'OpenFaaS (Moteur Serverless)
 
@@ -167,3 +189,42 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
 ### Sur Linux
     curl -sSL https://cli.openfaas.com | sudo sh
+
+
+## Créer une fonction OpenFaaS
+
+### Executer la commande suivante avec le nom du template python3-http et le nom de la fonction hello-python
+    faas-cli new --lang python3-http-debian hello-python
+
+### Executer le build pour créer l'image docker
+    Powershell > wsl -u root
+    (deploy puis supprimer l'image docker, puis "faas-cli rm hello-python" pour supprimer le cache de l'ancienne fonction)
+    sur windows via (wsl): faas-cli build -f stack.yaml
+
+    Et pour voir si ça a bien été créé: docker images | grep hello
+
+### run avec (il fait le build en plus)
+    (deploy puis supprimer l'image docker, puis "faas-cli rm hello-python" pour supprimer le cache de l'ancienne fonction)
+    faas-cli up -f stack.yam
+
+### Pour tester (même si on est pas obligé) on peut créer le conteneur:
+    docker run -p -it 9090:8080 hello-python:latest
+    ensuite
+    docker inspect {id}
+
+    récupérer l'IP et aller sur localhost:9090
+
+### Pour voir les modifications en temps réel faire:
+    faas-cli local-run --port 9090 --watch
+
+### Il faut maintenant heberger sur dockerhub notre image en créant un nouveau repository
+    Donc mettre image: pabloescargot/hellopython:latest dans stack.yaml
+    Faire docker login
+    puis: faas-cli publish
+
+### Pour déployer: 
+    faas-cli deploy
+
+### Démarrer une BDD docker:
+    docker run --name db -e MARIADB_DATABASE=dbfass -e MARIADB_ROOT_PASSWORD=password -d mariadb:latest
+    (bien penser à rattacher au meme réseau openfaas et mariadb)

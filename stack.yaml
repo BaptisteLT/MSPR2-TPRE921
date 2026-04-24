@@ -1,0 +1,15 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  hello-python:
+    lang: python3-http-debian
+    handler: ./hello-python
+    image: pabloescargot/hellopython:latest
+    environment:
+      DB_HOST: "mspr-mariadb.default.svc.cluster.local"
+      DB_USER: "cofrap_user"
+      DB_PASSWORD: "SuperProtect&dPassw0ord"
+      DB_NAME: "cofrap_db"
+
