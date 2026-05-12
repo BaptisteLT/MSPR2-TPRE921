@@ -3,12 +3,22 @@ provider:
   name: openfaas
   gateway: http://127.0.0.1:8080
 functions:
-  hello-python:
+  cofrap-gen-pwd:
     lang: python3-http-debian
-    handler: ./hello-python
-    image: pabloescargot/hellopython:latest
-    environment:
+    handler: ./cofrap-gen-pwd
+    image: pabloescargot/cofrap-gen-pwd:latest
+    environment: &db_env
       DB_HOST: "mspr-mariadb.default.svc.cluster.local"
-      DB_USER: "cofrap_user"
-      DB_PASSWORD: "SuperProtect&dPassw0ord"
+      DB_USER: "root"
+      DB_PASSWORD: "rootcofrap"
       DB_NAME: "cofrap_db"
+  cofrap-gen-2fa:
+    lang: python3-http-debian
+    handler: ./cofrap-gen-2fa
+    image: pabloescargot/cofrap-gen-2fa:latest
+    environment: *db_env
+  cofrap-auth:
+    lang: python3-http-debian
+    handler: ./cofrap-auth
+    image: pabloescargot/cofrap-auth:latest
+    environment: *db_env

@@ -111,31 +111,14 @@ Création de l'environnement de travail :
 
 Une fois que Minikube tourne et que votre terminal est prêt, exécutez ces étapes pour déployer la base de données et le moteur Serverless.
 
-#### 1. Déploiement de MariaDB (via Bitnami)
-
-Nous utilisons Helm pour déployer une instance persistante de MariaDB.
+#### 1. Déploiement de MariaDB
 
 
-#### Ajouter le catalogue Bitnami
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-
-#### Installer MariaDB avec les identifiants COFRAP
-#### Remarque : les mots de passe sont ici simplifiés pour le POC
-
-# 1. On charge les mots de passe dans Kubernetes
-kubectl apply -f db-secrets.yaml
-
-# 2. On lance l'upgrade en utilisant ces variables
-helm upgrade mspr-mariadb --install bitnami/mariadb `
-  --set auth.existingSecret=mariadb-secrets `
-  --set auth.database=cofrap_db `
-  --set auth.username=cofrap_user `
-  --set primary.persistence.enabled=true `
-  --set primary.persistence.size=5Gi
+# 1. Lancement du déploiement MARIADB
+    kubectl apply -k .
   
 #### On check que ça tourne
-    kubectl get pods
+    kubectl get pods    
 
 #### On récupère le nom du service (ici mspr-mariadb)
     PS C:\Projets\MSPR2> kubectl get svc
@@ -230,3 +213,55 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
 ### Pour déployer: 
     faas-cli deploy
+
+# Etapes de création des 3 fonctions 
+faas-cli new --lang python3-http-debian cofrap-gen-pwd
+faas-cli new --lang python3-http-debian cofrap-gen-2fa --append stack.yaml
+faas-cli new --lang python3-http-debian cofrap-auth --append stack.yaml
+
+## On obtient ensuite un fichier stack.yaml qu'on doit remplacer par cette config:
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  cofrap-gen-pwd:
+    lang: python3-http-debian
+    handler: ./cofrap-gen-pwd
+    image: pabloescargot/cofrap-gen-pwd:latest
+    environment: &db_env
+      DB_HOST: "mspr-mariadb.default.svc.cluster.local"
+      DB_USER: "root"
+      DB_PASSWORD: "rootcofrap"
+      DB_NAME: "cofrap_db"
+  cofrap-gen-2fa:
+    lang: python3-http-debian
+    handler: ./cofrap-gen-2fa
+    image: pabloescargot/cofrap-gen-2fa:latest
+    environment: *db_env
+  cofrap-auth:
+    lang: python3-http-debian
+    handler: ./cofrap-auth
+    image: pabloescargot/cofrap-auth:latest
+    environment: *db_env
+
+## Puis on doit ajouter les librairies dans requirements.txt à l'intérieur du premier dossier cofrap-gen-psw
+pymysql
+bcrypt
+qrcode[pil]
+
+### puis pareil pour cofrap-gen-2fa:
+pymysql
+qrcode[pil]
+pyotp
+cryptography
+
+## Puis pareil pour cofrap-auth:
+pymysql
+bcrypt
+pyotp
+cryptography
+
+## Après avoir ajoute le code de chaque fonction dans handler.py, peut lancer:
+docker login
+wsl faas-cli up -f stack.yaml

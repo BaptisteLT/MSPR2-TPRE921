@@ -1,0 +1,3 @@
+pymysql
+bcrypt
+qrcode[pil]
