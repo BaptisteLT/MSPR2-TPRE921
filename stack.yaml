@@ -12,4 +12,3 @@ functions:
       DB_USER: "cofrap_user"
       DB_PASSWORD: "SuperProtect&dPassw0ord"
       DB_NAME: "cofrap_db"
-

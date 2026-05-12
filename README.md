@@ -122,11 +122,17 @@ helm repo update
 
 #### Installer MariaDB avec les identifiants COFRAP
 #### Remarque : les mots de passe sont ici simplifiés pour le POC
-helm install mspr-mariadb bitnami/mariadb \
-  --set auth.rootPassword=rootcofrap \
-  --set auth.database=cofrap_db \
-  --set auth.username=cofrap_user \
-  --set auth.password="SuperProtect&dPassw0ord"
+
+# 1. On charge les mots de passe dans Kubernetes
+kubectl apply -f db-secrets.yaml
+
+# 2. On lance l'upgrade en utilisant ces variables
+helm upgrade mspr-mariadb --install bitnami/mariadb `
+  --set auth.existingSecret=mariadb-secrets `
+  --set auth.database=cofrap_db `
+  --set auth.username=cofrap_user `
+  --set primary.persistence.enabled=true `
+  --set primary.persistence.size=5Gi
   
 #### On check que ça tourne
     kubectl get pods
@@ -155,7 +161,7 @@ helm install mspr-mariadb bitnami/mariadb \
 OpenFaaS nécessite des namespaces (dossiers) spécifiques pour séparer le système des fonctions utilisateur.
 
 #### 1. Créer les dossiers isolés (Namespaces)
-    apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+    kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
 
 #### 2. Ajouter le catalogue OpenFaaS
     helm repo add openfaas https://openfaas.github.io/faas-netes/
@@ -203,9 +209,9 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
     Et pour voir si ça a bien été créé: docker images | grep hello
 
-### run avec (il fait le build en plus)
+### run avec (il fait le build, le push et le deploy)
     (deploy puis supprimer l'image docker, puis "faas-cli rm hello-python" pour supprimer le cache de l'ancienne fonction)
-    faas-cli up -f stack.yam
+    faas-cli up -f stack.yaml
 
 ### Pour tester (même si on est pas obligé) on peut créer le conteneur:
     docker run -p -it 9090:8080 hello-python:latest
@@ -224,7 +230,3 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
 ### Pour déployer: 
     faas-cli deploy
-
-### Démarrer une BDD docker:
-    docker run --name db -e MARIADB_DATABASE=dbfass -e MARIADB_ROOT_PASSWORD=password -d mariadb:latest
-    (bien penser à rattacher au meme réseau openfaas et mariadb)

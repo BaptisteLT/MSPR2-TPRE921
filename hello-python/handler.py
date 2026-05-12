@@ -1,24 +1,34 @@
 import os
 import pymysql
 
+def get_secret(name):
+    """Lit un secret OpenFaaS depuis le système de fichiers."""
+    path = f"/var/openfaas/secrets/{name}"
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return f.read().strip()
+    return None
+
 def handle(event, context):
-    # Récupération des identifiants depuis le stack.yaml
+    # Variables classiques (non sensibles)
     db_host = os.environ.get("DB_HOST")
     db_user = os.environ.get("DB_USER")
-    db_password = os.environ.get("DB_PASSWORD")
     db_name = os.environ.get("DB_NAME")
+    
+    # Récupération du mot de passe sécurisé
+    # Si le secret n'existe pas, on tente de rabattre sur l'env (pour le debug)
+    db_password = get_secret("db-password") or os.environ.get("DB_PASSWORD")
 
     try:
-        # Tentative de connexion à MariaDB
         connection = pymysql.connect(
             host=db_host,
             user=db_user,
             password=db_password,
             database=db_name,
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5 # Évite d'attendre 30s si la DB est injoignable
         )
 
-        # Si on arrive ici, on fait une petite requête pour demander la version
         with connection.cursor() as cursor:
             cursor.execute("SELECT VERSION() AS version;")
             result = cursor.fetchone()
@@ -27,14 +37,11 @@ def handle(event, context):
 
         return {
             "statusCode": 200,
-            "body": f"SUCCÈS ! Connecté à MariaDB (Version: {result['version']}) sur l'hôte {db_host}"
+            "body": f"🚀🚀🚀 SUCCEÈS ! Connecté à MariaDB v{result['version']} sur {db_host}"
         }
 
     except Exception as e:
-        # Si ça plante, on affiche l'erreur exacte pour pouvoir réparer
         return {
             "statusCode": 500,
-            "body": f"ERREUR DE CONNEXION : {str(e)}"
-        } 
-         
-         
+            "body": f"❌ ERREUR DE CONNEXION : {str(e)}"
+        }
