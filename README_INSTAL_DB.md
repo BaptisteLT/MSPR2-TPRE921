@@ -1,5 +1,8 @@
-kubectl exec -it mspr-mariadb-0 -- mysql -u root -p cofrap_db
+kubectl get pods
 
+kubectl exec -it TON_NOM_DE_POD -- mariadb -u root -p
+
+USE cofrap_db;
 
 CREATE TABLE IF NOT EXISTS users (
     ID INT AUTO_INCREMENT PRIMARY KEY,
@@ -10,3 +13,4 @@ CREATE TABLE IF NOT EXISTS users (
     expired TINYINT(1) DEFAULT 0
 );
 
+SHOW TABLES;

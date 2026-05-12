@@ -3,3 +3,6 @@ template
 build
 .secrets
 db-secrets.yaml
+template
+build
+.secrets
