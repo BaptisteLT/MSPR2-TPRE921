@@ -122,18 +122,46 @@ helm repo update
 
 #### Installer MariaDB avec les identifiants COFRAP
 #### Remarque : les mots de passe sont ici simplifiés pour le POC
-helm install mspr-mariadb bitnami/mariadb \
-  --set auth.rootPassword=rootcofrap \
-  --set auth.database=cofrap_db \
-  --set auth.username=cofrap_user \
-  --set auth.password="SuperProtect&dPassw0ord"
+
+# 1. On charge les mots de passe dans Kubernetes
+kubectl apply -f db-secrets.yaml
+
+# 2. On lance l'upgrade en utilisant ces variables
+helm upgrade mspr-mariadb --install bitnami/mariadb `
+  --set auth.existingSecret=mariadb-secrets `
+  --set auth.database=cofrap_db `
+  --set auth.username=cofrap_user `
+  --set primary.persistence.enabled=true `
+  --set primary.persistence.size=5Gi
+  
+#### On check que ça tourne
+    kubectl get pods
+
+#### On récupère le nom du service (ici mspr-mariadb)
+    PS C:\Projets\MSPR2> kubectl get svc
+    NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+    kubernetes              ClusterIP   10.96.0.1      <none>        443/TCP    43h
+    mspr-mariadb            ClusterIP   10.96.237.39   <none>        3306/TCP   42h
+    mspr-mariadb-headless   ClusterIP   None           <none>        3306/TCP   42h
+
+#### Et donc dans le slack.yaml on aura
+    functions:
+        hello-python:
+            lang: python3-http-debian
+            handler: ./hello-python
+            image: pabloescargot/hellopython:latest
+            environment:
+            DB_HOST: "mspr-mariadb.default.svc.cluster.local"
+            DB_USER: "cofrap_user"
+            DB_PASSWORD: "SuperProtect&dPassw0ord"
+            DB_NAME: "cofrap_db"
 
 ### 2. Déploiement d'OpenFaaS (Moteur Serverless)
 
 OpenFaaS nécessite des namespaces (dossiers) spécifiques pour séparer le système des fonctions utilisateur.
 
 #### 1. Créer les dossiers isolés (Namespaces)
-    apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+    kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
 
 #### 2. Ajouter le catalogue OpenFaaS
     helm repo add openfaas https://openfaas.github.io/faas-netes/
@@ -167,3 +195,38 @@ Le cluster est isolé par défaut. Pour accéder à l'interface graphique (Gatew
 
 ### Sur Linux
     curl -sSL https://cli.openfaas.com | sudo sh
+
+
+## Créer une fonction OpenFaaS
+
+### Executer la commande suivante avec le nom du template python3-http et le nom de la fonction hello-python
+    faas-cli new --lang python3-http-debian hello-python
+
+### Executer le build pour créer l'image docker
+    Powershell > wsl -u root
+    (deploy puis supprimer l'image docker, puis "faas-cli rm hello-python" pour supprimer le cache de l'ancienne fonction)
+    sur windows via (wsl): faas-cli build -f stack.yaml
+
+    Et pour voir si ça a bien été créé: docker images | grep hello
+
+### run avec (il fait le build, le push et le deploy)
+    (deploy puis supprimer l'image docker, puis "faas-cli rm hello-python" pour supprimer le cache de l'ancienne fonction)
+    faas-cli up -f stack.yaml
+
+### Pour tester (même si on est pas obligé) on peut créer le conteneur:
+    docker run -p -it 9090:8080 hello-python:latest
+    ensuite
+    docker inspect {id}
+
+    récupérer l'IP et aller sur localhost:9090
+
+### Pour voir les modifications en temps réel faire:
+    faas-cli local-run --port 9090 --watch
+
+### Il faut maintenant heberger sur dockerhub notre image en créant un nouveau repository
+    Donc mettre image: pabloescargot/hellopython:latest dans stack.yaml
+    Faire docker login
+    puis: faas-cli publish
+
+### Pour déployer: 
+    faas-cli deploy
