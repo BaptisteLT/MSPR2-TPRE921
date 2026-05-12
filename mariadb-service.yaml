@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mspr-mariadb
+spec:
+  selector:
+    component: database
+  ports:
+    - port: 3306
+      targetPort: 3306
