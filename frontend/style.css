@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: #333;
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 5px;
+}
+
+input,
+button {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Ajout pour l'accessibilité au clavier (Focus visible) */
+input:focus,
+button:focus {
+    outline: 3px solid #007BFF;
+    outline-offset: 2px;
+    border-color: #007BFF;
+}
+
+.result {
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+img {
+    display: block;
+    margin: 10px auto;
+    max-width: 200px;
+}
